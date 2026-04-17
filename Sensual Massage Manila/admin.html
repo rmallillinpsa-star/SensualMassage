@@ -44,7 +44,7 @@
         <h1>Manage the website content from one private dashboard.</h1>
         <p class="lead compact">
           Log in to add, edit, and delete branches, services, rates, staff, promos,
-          slides, home content, bookings, settings, and admin users stored in Google Sheets.
+          slides, home content, bookings, and settings stored in the shared Supabase database.
         </p>
       </div>
     </section>
@@ -55,8 +55,8 @@
           <p class="contact-label">Secure Login</p>
           <h2>Admin Access</h2>
           <label>
-            Username
-            <input type="text" name="username" placeholder="Enter username" required>
+            Email
+            <input type="email" name="email" placeholder="Enter admin email" required>
           </label>
           <label>
             Password
@@ -97,6 +97,7 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20260414r"></script>
   <script src="script.js?v=20260414r"></script>
   <script src="admin.js?v=20260414r"></script>

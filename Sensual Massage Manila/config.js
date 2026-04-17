@@ -3,6 +3,8 @@ window.SITE_CONFIG = {
   brandLogoUrl: "assets/Sensual Massage Manila.png",
   whatsappNumber: "639000000000",
   whatsappDisplay: "+63 900 000 0000",
-  apiBaseUrl: "https://script.google.com/macros/s/AKfycbw_vaKADyoa7premBoeWfdxDNcB08MUCsuVPMehH7ADlm24Qq9qC-m26o9XSu9QbQVVUw/exec",
-  bookingEndpoint: "https://script.google.com/macros/s/AKfycbw_vaKADyoa7premBoeWfdxDNcB08MUCsuVPMehH7ADlm24Qq9qC-m26o9XSu9QbQVVUw/exec"
+  apiBaseUrl: "https://YOUR-PROJECT-REF.functions.supabase.co/site-api",
+  bookingEndpoint: "https://YOUR-PROJECT-REF.functions.supabase.co/site-api",
+  supabaseUrl: "https://YOUR-PROJECT-REF.supabase.co",
+  supabaseAnonKey: "YOUR-SUPABASE-ANON-KEY"
 };

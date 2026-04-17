@@ -13,7 +13,6 @@ const adminManagedTables = {
   branches: "branches",
   services: "services",
   staff: "staff",
-  staff_images: "staff_images",
   promos: "promos",
   slides: "slides",
   home_sections: "home_sections",
@@ -21,6 +20,53 @@ const adminManagedTables = {
   settings: "settings",
   bookings: "bookings"
 } as const;
+
+function toBooleanString(value: unknown) {
+  return String(value ?? "TRUE").trim().toUpperCase() === "FALSE" ? "FALSE" : "TRUE";
+}
+
+function toDbBoolean(value: unknown) {
+  return String(value ?? "TRUE").trim().toUpperCase() !== "FALSE";
+}
+
+function normalizeText(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function normalizeSlug(value: unknown) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function parseNumberValue(value: unknown) {
+  const numericValue = Number(value ?? 0);
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function parseImageUrls(value: unknown) {
+  return String(value ?? "")
+    .split(/\r?\n|,|;/)
+    .map((item) => normalizeText(item))
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function extractDriveFileId(value: unknown) {
+  const trimmedValue = normalizeText(value);
+  if (!trimmedValue) return "";
+
+  const driveFileMatch = trimmedValue.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+  if (driveFileMatch) return driveFileMatch[1];
+
+  const driveOpenMatch = trimmedValue.match(/[?&]id=([^&]+)/i);
+  if (trimmedValue.includes("drive.google.com") && driveOpenMatch) {
+    return driveOpenMatch[1];
+  }
+
+  return "";
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -217,19 +263,354 @@ async function getAdminData(request: Request) {
     throw failed.error;
   }
 
+  const branchById = new Map((branches.data || []).map((row) => [row.id, row.name]));
+  const groupedImages = new Map<string, string[]>();
+
+  for (const image of staffImages.data || []) {
+    const staffId = String(image.staff_id || "");
+    if (!staffId) continue;
+    const list = groupedImages.get(staffId) || [];
+    if (image.image_url) {
+      list.push(String(image.image_url));
+    }
+    groupedImages.set(staffId, list);
+  }
+
   return {
-    branches: branches.data || [],
-    services: services.data || [],
-    staff: staff.data || [],
-    staff_images: staffImages.data || [],
-    promos: promos.data || [],
-    slides: slides.data || [],
-    home_sections: homeSections.data || [],
-    rates: rates.data || [],
-    settings: settings.data || [],
-    bookings: bookings.data || [],
+    branches: (branches.data || []).map((row) => ({
+      name: row.name,
+      address: row.address || "",
+      phone: row.phone || "",
+      email: row.email || "",
+      whatsapp_number: row.whatsapp_number || "",
+      viber_number: row.viber_number || "",
+      wechat_id: row.wechat_id || "",
+      telegram_username: row.telegram_username || "",
+      map_link: row.map_link || "",
+      logo_url: row.logo_url || "",
+      logo_file_id: extractDriveFileId(row.logo_url || row.logo_path || ""),
+      active: toBooleanString(row.active)
+    })),
+    services: (services.data || []).map((row) => ({
+      branch: row.branch_id ? branchById.get(row.branch_id) || "" : "",
+      name: row.name,
+      description: row.description || "",
+      duration: row.duration || "",
+      female_rate: String(row.female_rate ?? ""),
+      male_rate: String(row.male_rate ?? ""),
+      category: row.category || "",
+      active: toBooleanString(row.active)
+    })),
+    staff: (staff.data || []).map((row) => ({
+      branch: branchById.get(row.branch_id) || "",
+      name: row.name,
+      gender: row.gender || "Female",
+      role: row.role || "",
+      specialty: row.specialty || "",
+      age: row.age ?? "",
+      height: row.height || "",
+      weight: row.weight || "",
+      image_urls: (groupedImages.get(row.id) || []).join("\n"),
+      bio: row.bio || "",
+      active: toBooleanString(row.active)
+    })),
+    promos: (promos.data || []).map((row) => ({
+      branch: row.branch_id ? branchById.get(row.branch_id) || "" : "",
+      title: row.title,
+      description: row.description || "",
+      label: row.label || "",
+      active: toBooleanString(row.active)
+    })),
+    slides: (slides.data || []).map((row) => ({
+      branch: row.branch_id ? branchById.get(row.branch_id) || "" : "",
+      title: row.title || "",
+      subtitle: row.subtitle || "",
+      image_url: row.image_url || "",
+      alt_text: row.alt_text || "",
+      button_text: row.button_text || "",
+      button_link: row.button_link || "",
+      active: toBooleanString(row.active)
+    })),
+    home_sections: (homeSections.data || []).map((row) => ({
+      branch: row.branch_id ? branchById.get(row.branch_id) || "" : "",
+      section_key: row.section_key,
+      title: row.title,
+      description: row.description || "",
+      image_url: row.image_url || "",
+      button_text: row.button_text || "",
+      button_link: row.button_link || "",
+      active: toBooleanString(row.active)
+    })),
+    rates: (rates.data || []).map((row) => ({
+      branch: row.branch_id ? branchById.get(row.branch_id) || "" : "",
+      key: row.key,
+      label: row.label,
+      amount: String(row.amount ?? ""),
+      category: row.category || "service",
+      active: toBooleanString(row.active)
+    })),
+    settings: (settings.data || []).map((row) => ({
+      key: row.key,
+      value: row.value
+    })),
+    bookings: (bookings.data || []).map((row) => ({
+      branch: row.branch_name || (row.branch_id ? branchById.get(row.branch_id) || "" : ""),
+      timestamp: row.timestamp || row.created_at || "",
+      name: row.name || "",
+      phone: row.phone || "",
+      service: row.service || "",
+      female_therapist_count: String(row.female_therapist_count ?? 0),
+      male_therapist_count: String(row.male_therapist_count ?? 0),
+      date: row.booking_date || "",
+      time: row.booking_time || "",
+      female_therapists: row.female_therapists || "",
+      male_therapists: row.male_therapists || "",
+      estimated_service_cost: String(row.estimated_service_cost ?? 0),
+      taxi_fare: String(row.taxi_fare ?? 0),
+      total_estimate: String(row.total_estimate ?? 0),
+      agreement: row.agreement || "No",
+      notes: row.notes || "",
+      status: row.status || "New"
+    })),
     admin_profiles: adminProfiles.data || []
   };
+}
+
+async function buildBranchMaps(adminClient: ReturnType<typeof getAdminClient>) {
+  const { data, error } = await adminClient.from("branches").select("id, name, site_key, slug");
+  if (error) throw error;
+  const branchIdByName = new Map<string, string>();
+  (data || []).forEach((row) => {
+    branchIdByName.set(String(row.name || "").trim(), row.id);
+  });
+  return { branchIdByName };
+}
+
+async function replaceTableRows(adminClient: ReturnType<typeof getAdminClient>, tableName: string, rows: Record<string, unknown>[]) {
+  const { error: deleteError } = await adminClient.from(tableName).delete().not("id", "is", null);
+  if (deleteError) throw deleteError;
+  if (!rows.length) return;
+  const { error: insertError } = await adminClient.from(tableName).insert(rows);
+  if (insertError) throw insertError;
+}
+
+async function saveBranches(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const mappedRows = rows.map((row, index) => {
+    const name = normalizeText(row.name);
+    const slug = normalizeSlug(row.slug || name);
+    const siteKey = slug || `branch-${index + 1}`;
+    return {
+      site_key: siteKey,
+      slug: slug || siteKey,
+      name,
+      address: normalizeText(row.address),
+      phone: normalizeText(row.phone),
+      email: normalizeText(row.email),
+      whatsapp_number: normalizeText(row.whatsapp_number),
+      viber_number: normalizeText(row.viber_number),
+      wechat_id: normalizeText(row.wechat_id),
+      telegram_username: normalizeText(row.telegram_username),
+      map_link: normalizeText(row.map_link),
+      logo_url: normalizeText(row.logo_url),
+      logo_path: "",
+      active: toDbBoolean(row.active),
+      sort_order: index
+    };
+  }).filter((row) => row.name);
+
+  await replaceTableRows(adminClient, adminManagedTables.branches, mappedRows);
+}
+
+async function saveServices(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    name: normalizeText(row.name),
+    description: normalizeText(row.description),
+    duration: normalizeText(row.duration),
+    female_rate: parseNumberValue(row.female_rate),
+    male_rate: parseNumberValue(row.male_rate),
+    category: normalizeText(row.category),
+    active: toDbBoolean(row.active),
+    sort_order: index
+  })).filter((row) => row.name);
+
+  await replaceTableRows(adminClient, adminManagedTables.services, mappedRows);
+}
+
+async function saveStaff(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const staffRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    name: normalizeText(row.name),
+    slug: normalizeSlug(row.slug || row.name || `staff-${index + 1}`),
+    gender: normalizeText(row.gender) === "Male" ? "Male" : "Female",
+    role: normalizeText(row.role),
+    specialty: normalizeText(row.specialty),
+    age: normalizeText(row.age) ? parseNumberValue(row.age) : null,
+    height: normalizeText(row.height),
+    weight: normalizeText(row.weight),
+    bio: normalizeText(row.bio),
+    active: toDbBoolean(row.active),
+    sort_order: index,
+    __imageUrls: parseImageUrls(row.image_urls)
+  })).filter((row) => row.branch_id && row.name);
+
+  const insertRows = staffRows.map(({ __imageUrls, ...row }) => row);
+  await replaceTableRows(adminClient, adminManagedTables.staff, insertRows);
+
+  const { data: insertedStaff, error: staffFetchError } = await adminClient
+    .from("staff")
+    .select("id, slug")
+    .order("sort_order");
+  if (staffFetchError) throw staffFetchError;
+
+  const staffIdBySlug = new Map((insertedStaff || []).map((row) => [String(row.slug || ""), row.id]));
+  const imageRows = staffRows.flatMap((row) =>
+    row.__imageUrls.map((imageUrl, index) => ({
+      staff_id: staffIdBySlug.get(row.slug) || null,
+      image_url: imageUrl,
+      storage_path: "",
+      sort_order: index
+    }))
+  ).filter((row) => row.staff_id);
+
+  await replaceTableRows(adminClient, "staff_images", imageRows);
+}
+
+async function savePromos(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    title: normalizeText(row.title),
+    description: normalizeText(row.description),
+    label: normalizeText(row.label),
+    active: toDbBoolean(row.active),
+    sort_order: index
+  })).filter((row) => row.title);
+
+  await replaceTableRows(adminClient, adminManagedTables.promos, mappedRows);
+}
+
+async function saveSlides(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    title: normalizeText(row.title),
+    subtitle: normalizeText(row.subtitle),
+    image_url: normalizeText(row.image_url),
+    image_path: "",
+    alt_text: normalizeText(row.alt_text),
+    button_text: normalizeText(row.button_text),
+    button_link: normalizeText(row.button_link),
+    active: toDbBoolean(row.active),
+    sort_order: index
+  })).filter((row) => row.image_url);
+
+  await replaceTableRows(adminClient, adminManagedTables.slides, mappedRows);
+}
+
+async function saveHomeSections(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    section_key: normalizeText(row.section_key),
+    title: normalizeText(row.title),
+    description: normalizeText(row.description),
+    image_url: normalizeText(row.image_url),
+    image_path: "",
+    button_text: normalizeText(row.button_text),
+    button_link: normalizeText(row.button_link),
+    active: toDbBoolean(row.active),
+    sort_order: index
+  })).filter((row) => row.section_key && row.title);
+
+  await replaceTableRows(adminClient, adminManagedTables.home_sections, mappedRows);
+}
+
+async function saveRates(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row, index) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    key: normalizeText(row.key),
+    label: normalizeText(row.label),
+    amount: parseNumberValue(row.amount),
+    category: normalizeText(row.category) === "taxi" ? "taxi" : "service",
+    active: toDbBoolean(row.active),
+    sort_order: index
+  })).filter((row) => row.key && row.label);
+
+  await replaceTableRows(adminClient, adminManagedTables.rates, mappedRows);
+}
+
+async function saveSettings(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const mappedRows = rows.map((row) => ({
+    branch_id: null,
+    key: normalizeText(row.key),
+    value: normalizeText(row.value)
+  })).filter((row) => row.key);
+
+  await replaceTableRows(adminClient, adminManagedTables.settings, mappedRows);
+}
+
+async function saveBookings(adminClient: ReturnType<typeof getAdminClient>, rows: Record<string, unknown>[]) {
+  const { branchIdByName } = await buildBranchMaps(adminClient);
+  const mappedRows = rows.map((row) => ({
+    branch_id: branchIdByName.get(normalizeText(row.branch)) || null,
+    branch_name: normalizeText(row.branch),
+    timestamp: normalizeText(row.timestamp) || new Date().toISOString(),
+    name: normalizeText(row.name),
+    phone: normalizeText(row.phone),
+    service: normalizeText(row.service),
+    female_therapist_count: parseNumberValue(row.female_therapist_count),
+    male_therapist_count: parseNumberValue(row.male_therapist_count),
+    booking_date: normalizeText(row.date) || null,
+    booking_time: normalizeText(row.time),
+    female_therapists: normalizeText(row.female_therapists),
+    male_therapists: normalizeText(row.male_therapists),
+    estimated_service_cost: parseNumberValue(row.estimated_service_cost),
+    taxi_fare: parseNumberValue(row.taxi_fare),
+    total_estimate: parseNumberValue(row.total_estimate),
+    agreement: normalizeText(row.agreement) || "No",
+    notes: normalizeText(row.notes),
+    status: normalizeText(row.status) || "New"
+  })).filter((row) => row.name);
+
+  await replaceTableRows(adminClient, adminManagedTables.bookings, mappedRows);
+}
+
+async function adminSaveSheet(request: Request, sheetName: string, rows: Record<string, unknown>[]) {
+  const { adminClient } = await assertAdmin(request);
+
+  if (!(sheetName in adminManagedTables)) {
+    throw new Error("Saving that sheet is not allowed.");
+  }
+
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+
+  if (sheetName === "branches") {
+    await saveBranches(adminClient, normalizedRows);
+  } else if (sheetName === "services") {
+    await saveServices(adminClient, normalizedRows);
+  } else if (sheetName === "staff") {
+    await saveStaff(adminClient, normalizedRows);
+  } else if (sheetName === "promos") {
+    await savePromos(adminClient, normalizedRows);
+  } else if (sheetName === "slides") {
+    await saveSlides(adminClient, normalizedRows);
+  } else if (sheetName === "home_sections") {
+    await saveHomeSections(adminClient, normalizedRows);
+  } else if (sheetName === "rates") {
+    await saveRates(adminClient, normalizedRows);
+  } else if (sheetName === "settings") {
+    await saveSettings(adminClient, normalizedRows);
+  } else if (sheetName === "bookings") {
+    await saveBookings(adminClient, normalizedRows);
+  } else {
+    throw new Error("Saving that sheet is not supported yet.");
+  }
+
+  return { sheetName, count: normalizedRows.length };
 }
 
 Deno.serve(async (request) => {
@@ -259,10 +640,9 @@ Deno.serve(async (request) => {
     }
 
     if (action === "adminSaveSheet") {
-      return json({
-        success: false,
-        message: "adminSaveSheet scaffolding is intentionally not enabled yet. Implement table-specific upsert/delete rules before going live."
-      }, 400);
+      const rows = Array.isArray(payload.rows) ? (payload.rows as Record<string, unknown>[]) : [];
+      const data = await adminSaveSheet(request, String(payload.sheetName || ""), rows);
+      return json({ success: true, data });
     }
 
     return json({ success: false, message: "Invalid action." }, 400);

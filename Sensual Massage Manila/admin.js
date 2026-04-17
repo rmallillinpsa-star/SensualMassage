@@ -1,5 +1,9 @@
 const adminConfig = window.SITE_CONFIG || {};
 const adminApiBaseUrl = adminConfig.apiBaseUrl || "";
+const adminSupabaseUrl = adminConfig.supabaseUrl || "";
+const adminSupabaseAnonKey = adminConfig.supabaseAnonKey || "";
+const adminSessionStorageKey = "supabaseAdminSession";
+let supabaseClient = null;
 
 const adminSheetDefinitions = {
   branches: {
@@ -133,20 +137,11 @@ const adminSheetDefinitions = {
       { key: "status", label: "Status", type: "select", options: ["New", "Confirmed", "Completed", "Cancelled"], defaultValue: "New" }
     ]
   },
-  admin_users: {
-    label: "Admin Users",
-    entryLabel: "Admin User",
-    fields: [
-      { key: "username", label: "Username", placeholder: "Admin username", required: true },
-      { key: "password", label: "Password", placeholder: "Admin password", required: true },
-      { key: "active", label: "Can log in", type: "select", options: ["TRUE", "FALSE"], defaultValue: "TRUE" }
-    ]
-  }
 };
 
 const adminState = { token: "", data: {} };
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.querySelector("[data-admin-login-form]");
   const refreshButton = document.querySelector("[data-admin-refresh]");
   const logoutButton = document.querySelector("[data-admin-logout]");
@@ -155,6 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  initializeSupabaseClient();
   loginForm.addEventListener("submit", handleAdminLogin);
 
   if (refreshButton) {
@@ -165,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutButton.addEventListener("click", logoutAdmin);
   }
 
-  const savedToken = sessionStorage.getItem("adminToken");
+  const savedToken = await restoreAdminSession();
 
   if (savedToken) {
     adminState.token = savedToken;
@@ -173,6 +169,44 @@ document.addEventListener("DOMContentLoaded", () => {
     loadAdminData();
   }
 });
+
+function initializeSupabaseClient() {
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+
+  if (!adminSupabaseUrl || !adminSupabaseAnonKey || !window.supabase || !window.supabase.createClient) {
+    return null;
+  }
+
+  supabaseClient = window.supabase.createClient(adminSupabaseUrl, adminSupabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: adminSessionStorageKey
+    }
+  });
+
+  return supabaseClient;
+}
+
+async function restoreAdminSession() {
+  const client = initializeSupabaseClient();
+
+  if (!client) {
+    return "";
+  }
+
+  const { data, error } = await client.auth.getSession();
+  if (error) {
+    console.warn("Failed to restore admin session.", error);
+    return "";
+  }
+
+  const accessToken = String(data?.session?.access_token || "").trim();
+  adminState.token = accessToken;
+  return accessToken;
+}
 
 async function handleAdminLogin(event) {
   event.preventDefault();
@@ -187,14 +221,22 @@ async function handleAdminLogin(event) {
   }
 
   try {
-    const result = await postAdminAction({
-      action: "adminLogin",
-      username: payload.username,
-      password: payload.password
+    const client = initializeSupabaseClient();
+
+    if (!client) {
+      throw new Error("Supabase admin login is not configured yet.");
+    }
+
+    const { data, error } = await client.auth.signInWithPassword({
+      email: String(payload.email || "").trim(),
+      password: String(payload.password || "")
     });
 
-    adminState.token = result.data.token;
-    sessionStorage.setItem("adminToken", adminState.token);
+    if (error || !data.session) {
+      throw new Error(error?.message || "Login failed.");
+    }
+
+    adminState.token = data.session.access_token || "";
     form.reset();
 
     if (status) {
@@ -223,7 +265,7 @@ async function loadAdminData() {
   panels.innerHTML = "<div class='contact-card'><p>Loading admin data...</p></div>";
 
   try {
-    const result = await postAdminAction({ action: "adminGetData", token });
+    const result = await postAdminAction({ action: "adminGetData" });
     adminState.data = result.data || {};
     renderAdminTabs();
     renderAdminPanels();
@@ -652,7 +694,6 @@ async function saveAdminSheet(sheetKey) {
   try {
     const result = await postAdminAction({
       action: "adminSaveSheet",
-      token,
       sheetName: sheetKey,
       rows
     });
@@ -733,12 +774,15 @@ function showAdminApp(isVisible) {
 function logoutAdmin() {
   adminState.token = "";
   adminState.data = {};
-  sessionStorage.removeItem("adminToken");
+  const client = initializeSupabaseClient();
+  if (client) {
+    client.auth.signOut();
+  }
   showAdminApp(false);
 }
 
 function getAdminToken() {
-  return adminState.token || sessionStorage.getItem("adminToken") || "";
+  return adminState.token || "";
 }
 
 async function postAdminAction(payload) {
@@ -746,11 +790,18 @@ async function postAdminAction(payload) {
     throw new Error("Admin API URL is missing.");
   }
 
+  const token = getAdminToken();
+  const headers = {
+    "Content-Type": "application/json"
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const response = await fetch(adminApiBaseUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
+    headers,
     body: JSON.stringify(payload)
   });
 
