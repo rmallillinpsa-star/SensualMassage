@@ -24,7 +24,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Manrope", sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at 10% 12%, rgba(255, 201, 211, 0.62), transparent 24%),
@@ -126,7 +126,7 @@ a {
 h1,
 h2,
 h3 {
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .brand strong {
@@ -197,7 +197,7 @@ h3 {
 
 .translate-slot .goog-te-gadget {
   color: var(--muted) !important;
-  font-family: "Manrope", sans-serif !important;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
   font-size: 0.92rem !important;
 }
 
@@ -1083,7 +1083,7 @@ img.qr,
   display: grid;
   place-items: center;
   color: var(--accent-strong);
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 2rem;
   font-weight: 700;
 }
@@ -1395,7 +1395,7 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
 
 .admin-login-card h2 {
   margin: 0 0 0.75rem 0;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 2.6rem;
   line-height: 1.02;
   color: var(--text);
@@ -1566,7 +1566,7 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
   place-items: center;
   background: linear-gradient(135deg, rgba(164, 15, 24, 0.14), rgba(197, 141, 71, 0.2));
   color: var(--accent-strong);
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 2rem;
   font-weight: 700;
 }
@@ -1627,7 +1627,7 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(164, 15, 24, 0.14), rgba(197, 141, 71, 0.2));
   color: var(--accent-strong);
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 2rem;
   font-weight: 700;
 }
