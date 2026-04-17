@@ -745,11 +745,7 @@ function renderStaffGroups(staffRows, branches) {
   }
 
   if (selectedBranchName) {
-    therapistGrid.innerHTML = `
-      <div class="therapist-list therapist-list-grid">
-        ${filteredStaff.map((staff) => renderTherapistProfile(staff)).join("")}
-      </div>
-    `;
+    therapistGrid.innerHTML = filteredStaff.map((staff) => renderTherapistProfile(staff)).join("");
     return;
   }
 

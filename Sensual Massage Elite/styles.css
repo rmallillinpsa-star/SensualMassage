@@ -11,8 +11,8 @@
   --shadow: 0 16px 34px rgba(181, 15, 42, 0.1);
   --radius-panel: 24px;
   --space-section: 2.2rem;
-  --font-display: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  --font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: "Arial Rounded MT Bold", "Arial Rounded MT", Arial, sans-serif;
+  --font-body: "Arial Rounded MT Bold", "Arial Rounded MT", Arial, sans-serif;
 }
 
 * {
@@ -62,16 +62,16 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3,
 h1,
 .page-hero h1 {
   margin: 0;
-  font-size: 2.5rem;
-  line-height: 0.95;
+  font-size: 2rem;
+  line-height: 1.1;
 }
 
 h2,
 .section-heading h2,
 .admin-login-card h2 {
   margin: 0 0 0.55rem;
-  font-size: 1.8rem;
-  line-height: 1;
+  font-size: 1.45rem;
+  line-height: 1.15;
 }
 
 h3,
@@ -79,7 +79,7 @@ h3,
 .therapist-profile-grid .therapist-body h3,
 body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
   margin: 0 0 0.45rem;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
 }
 
 .lead,
@@ -101,7 +101,7 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
 }
 
 .brand strong {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   letter-spacing: 0.04em;
 }
 
@@ -115,14 +115,6 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
 .therapist-avatar-placeholder {
   font-size: 1.25rem;
   font-weight: 600;
-}
-
-body[data-selected-branch-slug="elite"] .brand strong,
-body[data-selected-branch-slug="elite"] [data-business-name] {
-  font-family: "Juliette", "Brush Script MT", "Lucida Handwriting", cursive;
-  font-size: 2rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
 }
 
 img {
@@ -1090,6 +1082,12 @@ img.qr,
   align-items: start;
 }
 
+.therapist-section-page [data-therapist-grid] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.4rem 1.2rem;
+  justify-items: center;
+}
+
 .branch-therapist-section {
   display: grid;
   gap: 0.9rem;
@@ -1833,6 +1831,10 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .therapist-section-page [data-therapist-grid] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   body[data-selected-branch] .therapist-list-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1917,6 +1919,10 @@ body[data-selected-branch] .therapist-profile-grid .therapist-body h3 {
   }
 
   .therapist-list-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .therapist-section-page [data-therapist-grid] {
     grid-template-columns: 1fr;
   }
 
