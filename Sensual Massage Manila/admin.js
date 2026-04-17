@@ -19,7 +19,7 @@ const adminSheetDefinitions = {
       { key: "wechat_id", label: "WeChat ID", placeholder: "your_wechat_id" },
       { key: "telegram_username", label: "Telegram Username", placeholder: "yourtelegram" },
       { key: "map_link", label: "Google Maps Link", placeholder: "https://maps.google.com/..." },
-      { key: "logo_url", label: "Branch Photo URL", placeholder: "https://drive.google.com/file/d/FILE_ID/view?usp=sharing" },
+      { key: "logo_url", label: "Branch Photo", placeholder: "Paste image URL or upload from device" },
       { key: "logo_file_id", label: "Branch Photo File ID", placeholder: "Auto-filled after save", readOnly: true },
       { key: "active", label: "Show on website", type: "select", options: ["TRUE", "FALSE"], defaultValue: "TRUE" }
     ]
@@ -50,7 +50,7 @@ const adminSheetDefinitions = {
       { key: "age", label: "Age", type: "number", placeholder: "21" },
       { key: "height", label: "Height", placeholder: "Example: 165 cm" },
       { key: "weight", label: "Weight", placeholder: "Example: 55 kg" },
-      { key: "image_urls", label: "Profile Picture URLs", type: "textarea", placeholder: "Add 1 to 10 image URLs, one per line", required: true },
+      { key: "image_urls", label: "Profile Pictures", type: "textarea", placeholder: "Paste image URLs or upload from device", required: true },
       { key: "bio", label: "Short Bio", type: "textarea", placeholder: "Short introduction for the therapist" },
       { key: "active", label: "Show on website", type: "select", options: ["TRUE", "FALSE"], defaultValue: "TRUE" }
     ]
@@ -73,7 +73,7 @@ const adminSheetDefinitions = {
       { key: "branch", label: "Branch", type: "select", optionsSource: "branches", allowBlank: true, blankLabel: "All branches" },
       { key: "title", label: "Slide Title", placeholder: "Optional title" },
       { key: "subtitle", label: "Subtitle", type: "textarea", placeholder: "Optional subtitle" },
-      { key: "image_url", label: "Image URL", placeholder: "https://.../image.jpg", required: true },
+      { key: "image_url", label: "Slide Image", placeholder: "Paste image URL or upload from device", required: true },
       { key: "alt_text", label: "Image Alt Text", placeholder: "Describe the image" },
       { key: "button_text", label: "Button Text", placeholder: "Book Now" },
       { key: "button_link", label: "Button Link", placeholder: "booking.html" },
@@ -88,7 +88,7 @@ const adminSheetDefinitions = {
       { key: "section_key", label: "Section Key", placeholder: "Example: booking_block", required: true },
       { key: "title", label: "Title", placeholder: "Section title", required: true },
       { key: "description", label: "Description", type: "textarea", placeholder: "Section description", required: true },
-      { key: "image_url", label: "Image URL", placeholder: "Optional image URL" },
+      { key: "image_url", label: "Section Image", placeholder: "Paste image URL or upload from device" },
       { key: "button_text", label: "Button Text", placeholder: "Book Now" },
       { key: "button_link", label: "Button Link", placeholder: "booking.html" },
       { key: "active", label: "Show on website", type: "select", options: ["TRUE", "FALSE"], defaultValue: "TRUE" }
@@ -458,7 +458,10 @@ function renderUploadControl(field) {
 
   return `
     <div class="admin-upload-control">
-      <input type="file" accept="image/*"${isMultiple ? " multiple" : ""} data-upload-field="${field.key}">
+      <label class="admin-upload-button">
+        <span>Upload From Device</span>
+        <input type="file" accept="image/*"${isMultiple ? " multiple" : ""} data-upload-field="${field.key}">
+      </label>
       <small class="admin-field-hint">${helperText}</small>
     </div>
   `;
